@@ -1,5 +1,5 @@
 
-import { datosCita,nuevaCita,citaDB,crearCliente } from '../funciones.js';
+import { datosCita,nuevaCita,citaDB } from '../funciones.js';
 import { mascotaInput, propietarioInput, telefonoInput, fechaInput, horaInput, sintomasInput, formulario } from '../selectores.js';
 
 class App {
@@ -22,9 +22,6 @@ class App {
             formulario.addEventListener('submit', nuevaCita);
             document.addEventListener('DOMContentLoaded', ()=>{
                 citaDB();
-                setTimeout(() => {
-                crearCliente();
-                },5000);
             })
                 
         }

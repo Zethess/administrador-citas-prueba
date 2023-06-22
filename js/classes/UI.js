@@ -1,4 +1,4 @@
-import { eliminarCita, cargarEdicion} from '../funciones.js';
+import { eliminarCita, cargarEdicion, DB} from '../funciones.js';
 import { contenedorCitas } from '../selectores.js';
 
 
@@ -28,12 +28,19 @@ class UI {
         }, 3000);
    }
 
-   imprimirCitas({citas}) { // Se puede aplicar destructuring desde la función...
+   imprimirCitas() { // Se puede aplicar destructuring desde la función...
        
-        this.limpiarHTML();
+     this.limpiarHTML();
 
-        citas.forEach(cita => {
-            const {mascota, propietario, telefono, fecha, hora, sintomas, id } = cita;
+     //Leer contenido BD
+     const objectStore = DB.transaction('citas').objectStore('citas');
+
+     //Leer los registros de la BD
+     objectStore.openCursor().onsuccess = function (e) {
+     const cursor = e.target.result; //trae los valores que hay en la base de datos
+          //si existen valores en l abase de datos entonces mostraremos en la pantalla
+          if (cursor) {
+            const {mascota, propietario, telefono, fecha, hora, sintomas, id } = cursor.value;
 
             const divCita = document.createElement('div');
             divCita.classList.add('cita', 'p-3');
@@ -67,6 +74,7 @@ class UI {
 
             // Añade un botón de editar...
             const btnEditar = document.createElement('button');
+            const cita = cursor.value;
             btnEditar.onclick = () => cargarEdicion(cita);
 
             btnEditar.classList.add('btn', 'btn-info');
@@ -83,8 +91,12 @@ class UI {
             divCita.appendChild(btnEditar)
 
             contenedorCitas.appendChild(divCita);
-        });    
+
+            //Ve al siguiente elemento
+            cursor.continue();
+        }
    }
+}
 
    limpiarHTML() {
         while(contenedorCitas.firstChild) {

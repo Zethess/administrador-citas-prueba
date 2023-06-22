@@ -5,6 +5,8 @@ import { mascotaInput, propietarioInput, telefonoInput, fechaInput, horaInput, s
 
 const ui = new UI();
 const administrarCitas = new Citas();
+export let DB;
+
 
 const citaObj = {
     mascota: '',
@@ -40,14 +42,27 @@ export function nuevaCita(e) {
         // Estamos editando
         administrarCitas.editarCita( {...citaObj} );
 
+        const transaction = DB.transaction(['citas'], 'readwrite');
+        const objectStore = transaction.objectStore('citas');
+        //Nos permite editar registros
+        objectStore.put(citaObj);
         ui.imprimirAlerta('Guardado Correctamente');
+        transaction.oncomplete = function(){
+            console.log('Transacción Completada');
+            // Mostrar mensaje de que todo esta bien...
+            ui.imprimirAlerta('Se agregó correctamente');
+            formulario.querySelector('button[type="submit"]').textContent = 'Crear Cita';
 
-        formulario.querySelector('button[type="submit"]').textContent = 'Crear Cita';
+            editando = false;
+        }
+        transaction.onerror = function(){
+            console.log('Hubo un error en la transacción');
 
-        editando = false;
+        }
+        
 
     } else {
-        // Nuevo Registrando
+        // Nuevo Registro
 
         // Generar un ID único
         citaObj.id = Date.now();
@@ -55,13 +70,33 @@ export function nuevaCita(e) {
         // Añade la nueva cita
         administrarCitas.agregarCita({...citaObj});
 
-        // Mostrar mensaje de que todo esta bien...
-        ui.imprimirAlerta('Se agregó correctamente')
+        //Insertar Regstro en IndexDB
+        const transaction = DB.transaction(['citas'], 'readwrite');
+
+        //Habilitar onjectStore
+        const objectStore = transaction.objectStore('citas');
+
+        //para actualizar .put y para eliminar .delete
+        objectStore.add(citaObj);
+
+        transaction.oncomplete = function(){
+            console.log('Transacción Completada');
+            // Mostrar mensaje de que todo esta bien...
+            ui.imprimirAlerta('Se agregó correctamente')
+        }
+              
+        transaction.onerror = function(){
+            console.log('Hubo un error en la transacción');
+
+        }
+
+        
+       
     }
 
 
     // Imprimir el HTML de citas
-    ui.imprimirCitas(administrarCitas);
+    ui.imprimirCitas();
 
     // Reinicia el objeto para evitar futuros problemas de validación
     reiniciarObjeto();
@@ -83,9 +118,23 @@ export function reiniciarObjeto() {
 
 
 export function eliminarCita(id) {
-    administrarCitas.eliminarCita(id);
+    const transaction = DB.transaction(['citas'], 'readwrite');
+     //Habilitar onjectStore
+     const objectStore = transaction.objectStore('citas');
 
-    ui.imprimirCitas(administrarCitas)
+     //para actualizar .put y para eliminar .delete
+     objectStore.delete(id);
+
+     transaction.oncomplete = function(){
+        console.log(`Cita ${id} eliminada`);
+        ui.imprimirCitas()
+    }
+    transaction.onerror = function(){
+        console.log('Hubo un error en la transacción');
+
+    }
+
+    
 }
 
 export function cargarEdicion(cita) {
@@ -117,7 +166,7 @@ export function cargarEdicion(cita) {
 
 export function citaDB(){
     //Crear base de datos version 1.0. Se crea con open + nombre BD + version
-    let citaDB = window.indexedDB.open('cita',1);
+    let citaDB = window.indexedDB.open('citas',1);
     
     
     //Si hay error, metodo de indexDb, puede pasar que el navegador no soporte indexDB
@@ -130,6 +179,8 @@ export function citaDB(){
     citaDB.onsuccess = function(){
         console.log('Base de datos creada correctamente');
         DB = citaDB.result;
+        //Mstrar citas al cargar pero indexDB ya esta listo
+        ui.imprimirCitas();
     }
     
     
@@ -140,44 +191,20 @@ export function citaDB(){
         
         
         //nos permitira crear las columnas de nuestra BD
-        const objectStore = db.createObjectStore('cita', { //lo usaremos en la base de datos cita
+        const objectStore = db.createObjectStore('citas', { //lo usaremos en la base de datos cita
         //este es el objeto de configuración
-        keyPath: 'cita',
+        keyPath: 'id', //indice
         autoIncrement: true
     });
     //Definir las columnas nombre columnas + nombre keypath o la referencia para llamar a esa tabla + opciones
-    objectStore.createIndex('nombre', 'nombre', { unique: false});
-    objectStore.createIndex('email', 'email', { unique: true});//no puede haber dos emails iguales
+    objectStore.createIndex('mascota', 'mascota', { unique: false});
+    objectStore.createIndex('propietario', 'propietario', { unique: false});//no puede haber dos emails iguales
     objectStore.createIndex('telefono', 'telefono', { unique: false});
-    objectStore.createIndex('telefono', 'telefono', { unique: false});
-    objectStore.createIndex('telefono', 'telefono', { unique: false});
-    objectStore.createIndex('telefono', 'telefono', { unique: false});
-    objectStore.createIndex('telefono', 'telefono', { unique: false});
+    objectStore.createIndex('fecha', 'fecha', { unique: false});
+    objectStore.createIndex('hora', 'hora', { unique: false});
+    objectStore.createIndex('sintomas', 'sintomas', { unique: false});
+    objectStore.createIndex('id', 'id', { unique: true});
     }
 }
 
-export function crearCliente(){
-    //Para poder trabajar con las diferentes operaciones de una BD en IndexDB, se utilizan las transacciones
-    let transaction = DB.transaction(['cita'], 'readwrite'); //se realizara en la BD cita y luego se indica el modo
-    transaction.oncomplete = function(){
-    console.log('Transacción Completada');
-    }
-    
-    
-    transaction.onerror = function(){
-    console.log('Hubo un error en la transacción');
-    }
-    const objectStore = transaction.objectStore('cita');
-    
-    
-    const nuevoCliente = {
-        telefono: 192319419,
-        nombre: 'Juan',
-        email: 'correo@correo.com'
-    }
-    //para actualizar .put y para eliminar .delete
-    const peticion = objectStore.add(nuevoCliente);
-    console.log(peticion);
-
-}
     
